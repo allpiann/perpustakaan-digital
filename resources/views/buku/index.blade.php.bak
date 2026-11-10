@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daftar Buku</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 24px; color: #222; }
+        .container { max-width: 960px; margin: 0 auto; }
+        h1 { margin-top: 0; }
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        label { display: block; font-size: 14px; margin-bottom: 4px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .field-error { color: #c0392b; font-size: 12px; margin-top: 3px; min-height: 14px; }
+        button { padding: 8px 14px; border: 0; border-radius: 4px; cursor: pointer; color: #fff; }
+        .btn-simpan { background: #2563eb; }
+        .btn-batal { background: #6b7280; }
+        .btn-ubah { background: #f59e0b; }
+        .btn-hapus { background: #dc2626; }
+        .actions { margin-top: 12px; display: flex; gap: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; }
+        th { background: #f3f4f6; }
+        #alert { display: none; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 14px; }
+        #alert.ok { display: block; background: #dcfce7; color: #166534; }
+        #alert.err { display: block; background: #fee2e2; color: #991b1b; }
+        .pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+        .pager button { background: #374151; }
+        .pager button:disabled { opacity: .4; cursor: not-allowed; }
+        a { color: #2563eb; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Daftar Buku</h1>
+    <p><a href="/">&larr; Beranda</a></p>
+
+    <div id="alert"></div>
+
+    <!-- FORM TAMBAH / UBAH (Soal 2 dan 3) -->
+    <div class="card">
+        <h3 id="form-title">Tambah Buku</h3>
+        <form id="form-buku" novalidate>
+            <input type="hidden" id="buku-id">
+            <div class="grid">
+                <div>
+                    <label for="kategori_id">Kategori</label>
+                    <select id="kategori_id"><option value="">-- Pilih kategori --</option></select>
+                    <div class="field-error" data-error="kategori_id"></div>
+                </div>
+                <div>
+                    <label for="judul">Judul</label>
+                    <input type="text" id="judul">
+                    <div class="field-error" data-error="judul"></div>
+                </div>
+                <div>
+                    <label for="penulis">Penulis</label>
+                    <input type="text" id="penulis">
+                    <div class="field-error" data-error="penulis"></div>
+                </div>
+                <div>
+                    <label for="tahun_terbit">Tahun Terbit</label>
+                    <input type="number" id="tahun_terbit">
+                    <div class="field-error" data-error="tahun_terbit"></div>
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn-simpan" id="btn-simpan">Simpan</button>
+                <button type="button" class="btn-batal" id="btn-batal" style="display:none">Batal ubah</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABEL (Soal 1) -->
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th><th>Kategori</th><th>Judul</th><th>Penulis</th><th>Tahun Terbit</th><th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tabel-buku">
+                <tr><td colspan="6">Memuat data...</td></tr>
+            </tbody>
+        </table>
+        <div class="pager">
+            <button id="btn-prev">&laquo; Sebelumnya</button>
+            <span id="info-halaman"></span>
+            <button id="btn-next">Berikutnya &raquo;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '/api/buku';
+    const HEADERS = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+
+    let halaman = 1;
+    let lastPage = 1;
+    let perPage = 10;
+
+    const el = (id) => document.getElementById(id);
+
+    function esc(teks) {
+        const d = document.createElement('div');
+        d.textContent = teks ?? '';
+        return d.innerHTML;
+    }
+
+    function tampilPesan(teks, jenis) {
+        const a = el('alert');
+        a.textContent = teks;
+        a.className = jenis;           // 'ok' atau 'err'
+        setTimeout(() => { a.className = ''; a.textContent = ''; }, 5000);
+    }
+
+    function bersihkanError() {
+        document.querySelectorAll('[data-error]').forEach(e => e.textContent = '');
+    }
+
+    function tampilErrorField(errors) {
+        Object.keys(errors).forEach(f => {
+            const t = document.querySelector(`[data-error="${f}"]`);
+            if (t) t.textContent = errors[f][0];
+        });
+    }
+
+    // ---------- SOAL 1: ambil data (GET) ----------
+    async function muatBuku(page = 1) {
+         {
+            const response = await fetch(`${API}?page=${page}`, { headers: HEADERS });
+
+            if (!response.ok) {
+                throw new Error(`Gagal mengambil data buku (status ${response.status}).`);
+            }
+
+            const hasil = await response.json();
+            halaman = hasil.meta.current_page;
+            lastPage = hasil.meta.last_page;
+            perPage = hasil.meta.per_page;
+
+            const tbody = el('tabel-buku');
+
+            if (hasil.data.length === 0 && halaman > 1) {
+                return muatBuku(halaman - 1);   // halaman terakhir kosong setelah hapus
+            }
+
+            if (hasil.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">Belum ada data buku.</td></tr>';
+            } else {
+                tbody.innerHTML = hasil.data.map((b, i) => `
+                    <tr>
+                        <td>${(halaman - 1) * perPage + i + 1}</td>
+                        <td>${esc(b.kategori)}</td>
+                        <td><a href="/buku/${b.id}">${esc(b.judul)}</a></td>
+                        <td>${esc(b.penulis)}</td>
+                        <td>${esc(b.tahun)}</td>
+                        <td>
+                            <button class="btn-ubah" onclick="mulaiUbah(${b.id})">Ubah</button>
+                            <button class="btn-hapus" onclick="hapusBuku(${b.id}, '${esc(b.judul).replace(/'/g, "\\'")}')">Hapus</button>
+                        </td>
+                    </tr>`).join('');
+            }
+
+            el('info-halaman').textContent = `Halaman ${halaman} dari ${lastPage}`;
+            el('btn-prev').disabled = halaman <= 1;
+            el('btn-next').disabled = halaman >= lastPage;
+        } catch (error) {
+            el('tabel-buku').innerHTML =try
+                '<tr><td colspan="6">Data tidak dapat ditampilkan.</td></tr>';
+            tampilPesan(error.message.includes('status')
+                ? error.message
+                : 'API tidak dapat diakses. Pastikan server berjalan.', 'err');
+        }
+    }
+
+    // dropdown kategori memakai endpoint Modul 3
+    async function muatKategori() {
+        try {
+            const response = await fetch('/api/rekap/buku-per-kategori', { headers: HEADERS });
+            if (!response.ok) throw new Error();
+            const hasil = await response.json();
+            el('kategori_id').innerHTML = '<option value="">-- Pilih kategori --</option>' +
+                hasil.data.map(k => `<option value="${k.kategori_id}">${esc(k.kategori)}</option>`).join('');
+        } catch (e) {
+            tampilPesan('Daftar kategori gagal dimuat.', 'err');
+        }
+    }
+
+    function ambilForm() {
+        return {
+            kategori_id: el('kategori_id').value,
+            judul: el('judul').value,
+            penulis: el('penulis').value,
+            tahun_terbit: el('tahun_terbit').value,
+        };
+    }
+
+    function resetForm() {
+        el('form-buku').reset();
+        el('buku-id').value = '';
+        el('form-title').textContent = 'Tambah Buku';
+        el('btn-simpan').textContent = 'Simpan';
+        el('btn-batal').style.display = 'none';
+        bersihkanError();
+    }
+
+    // ---------- SOAL 2 dan 3: tambah (POST) / ubah (PUT) ----------
+    el('form-buku').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        bersihkanError();
+
+        const id = el('buku-id').value;
+        const sedangUbah = id !== '';
+        const url = sedangUbah ? `${API}/${id}` : API;
+
+        try {
+            const response = await fetch(url, {
+                method: sedangUbah ? 'PUT' : 'POST',
+                headers: HEADERS,
+                body: JSON.stringify(ambilForm()),
+            });
+
+            const hasil = await response.json().catch(() => ({}));
+
+            if (response.status === 422) {
+                tampilErrorField(hasil.errors || {});
+                tampilPesan('Data belum valid, periksa isian formulir.', 'err');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(hasil.message || `Permintaan gagal (status ${response.status}).`);
+            }
+
+            tampilPesan(sedangUbah ? 'Buku berhasil diperbarui.' : 'Buku berhasil ditambahkan.', 'ok');
+            resetForm();
+            await muatBuku(sedangUbah ? halaman : 1);
+        } catch (error) {
+            tampilPesan(error instanceof TypeError
+                ? 'API tidak dapat diakses. Pastikan server berjalan.'
+                : error.message, 'err');
+        }
+    });
+
+    // tombol Ubah: ambil data satu buku (GET /api/buku/{id}) lalu isi form
+    async function mulaiUbah(id) {
+        try {
+            const response = await fetch(`${API}/${id}`, { headers: HEADERS });
+            if (!response.ok) throw new Error(`Data buku tidak ditemukan (status ${response.status}).`);
+            const b = (await response.json()).data;
+
+            el('buku-id').value = b.id;
+            el('kategori_id').value = b.kategori_id;
+            el('judul').value = b.judul;
+            el('penulis').value = b.penulis;
+            el('tahun_terbit').value = b.tahun;
+
+            el('form-title').textContent = 'Ubah Buku';
+            el('btn-simpan').textContent = 'Simpan Perubahan';
+            el('btn-batal').style.display = 'inline-block';
+            bersihkanError();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            tampilPesan(error instanceof TypeError
+                ? 'API tidak dapat diakses. Pastikan server berjalan.'
+                : error.message, 'err');
+        }
+    }
+
+    el('btn-batal').addEventListener('click', resetForm);
+
+    // ---------- SOAL 4: hapus (DELETE) ----------
+    async function hapusBuku(id, judul) {
+        if (!confirm(`Yakin ingin menghapus buku "${judul}"?`)) {
+            return;   // dibatalkan, tidak ada request
+        }
+
+        try {
+            const response = await fetch(`${API}/${id}`, { method: 'DELETE', headers: HEADERS });
+            const hasil = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(hasil.message || `Gagal menghapus buku (status ${response.status}).`);
+            }
+
+            tampilPesan(hasil.message || 'Buku berhasil dihapus.', 'ok');
+            await muatBuku(halaman);
+        } catch (error) {
+            tampilPesan(error instanceof TypeError
+                ? 'API tidak dapat diakses. Pastikan server berjalan.'
+                : error.message, 'err');
+        }
+    }
+
+    el('btn-prev').addEventListener('click', () => muatBuku(halaman - 1));
+    el('btn-next').addEventListener('click', () => muatBuku(halaman + 1));
+
+    muatKategori();
+    muatBuku();
+</script>
+</body>
+</html>
