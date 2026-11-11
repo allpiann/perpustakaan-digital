@@ -11,6 +11,7 @@
                     <tbody>
                     @forelse ($riwayat as $r)
                         <tr class="border-b">
+                            <td class="p-2"><a class="text-indigo-600 underline" href="{{ route('peminjaman.show', $r->id) }}">Detail</a></td>
                             <td class="p-2">{{ $r->buku?->judul }}</td>
                             <td class="p-2">{{ $r->tanggal_pinjam?->format('d-m-Y') }}</td>
                             <td class="p-2">{{ $r->tanggal_kembali?->format('d-m-Y') ?? 'Belum kembali' }}</td>
