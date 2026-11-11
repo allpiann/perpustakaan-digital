@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Buku;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,7 @@ class BukuController extends Controller
         return view('buku.index');
     }
 
-    // Halaman /buku/{id} (detail). CEK: samakan dengan show lamamu bila berbeda
+    // Halaman /buku/{id} (detail). Samakan dengan show lamamu bila berbeda
     public function show($id)
     {
         $buku = Buku::with('kategori')->findOrFail($id);
@@ -28,9 +29,7 @@ class BukuController extends Controller
         return view('buku.index');
     }
 
-    // ===== Modul 6, Soal 1 =====
-
-    // Halaman daftar buku yang dirender Blade (untuk A1)
+    // Daftar buku yang dirender Blade
     public function daftar()
     {
         $bukus = Buku::with('kategori')->latest('id')->get();
@@ -38,20 +37,25 @@ class BukuController extends Controller
         return view('buku.daftar', compact('bukus'));
     }
 
-    // A2: SQL Injection (nilai judul digabung langsung ke string SQL)
+    // A2 DITAMBAL: query dengan binding (tanda ? dan array)
     public function cari(Request $request)
     {
         $judul = $request->query('judul');
 
-        $hasil = DB::select("SELECT * FROM bukus WHERE judul = '$judul'");
+        $hasil = DB::select('SELECT * FROM bukus WHERE judul = ?', [$judul]);
 
         return response()->json($hasil);
     }
 
-    // A3: dipanggil lewat route GET /buku/{buku}/hapus
+    // A3 DITAMBAL: sekarang dipanggil lewat route DELETE
     public function destroy(Buku $buku)
     {
-        $buku->delete();
+        try {
+            $buku->delete();
+        } catch (QueryException $e) {
+            return redirect()->route('buku.daftar')
+                ->withErrors(['hapus' => 'Buku tidak dapat dihapus karena masih memiliki data peminjaman.']);
+        }
 
         return redirect()->route('buku.daftar')->with('status', 'Buku berhasil dihapus.');
     }

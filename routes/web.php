@@ -24,13 +24,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->middleware('permission:ubah profil sendiri')->name('profile.destroy');
 
-    // ===== Modul 6, Soal 1: ROUTE RENTAN =====
-    Route::get('/buku-cari', [BukuController::class, 'cari'])->name('buku.cari');                 // A2
-    Route::get('/buku/{buku}/hapus', [BukuController::class, 'destroy'])
-        ->whereNumber('buku')->name('buku.hapus');                                                // A3
+    // ===== Modul 6, Soal 2 =====
+    Route::get('/buku-cari', [BukuController::class, 'cari'])->name('buku.cari');
+    // Route GET /buku/{buku}/hapus DIHAPUS, diganti DELETE:
+    Route::delete('/buku/{buku}', [BukuController::class, 'destroy'])
+        ->whereNumber('buku')->name('buku.destroy');
+    // A4 masih rentan (ditutup di Soal 4)
     Route::get('/peminjaman/{id}', [PeminjamanController::class, 'show'])
-        ->whereNumber('id')->name('peminjaman.show');                                             // A4
-    // =========================================
+        ->whereNumber('id')->name('peminjaman.show');
+    // ===========================
 
     Route::middleware('permission:lihat daftar buku')->group(function () {
         Route::get('/buku', [BukuController::class, 'index'])->name('buku.index');
