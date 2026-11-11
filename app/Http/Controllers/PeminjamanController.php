@@ -40,4 +40,12 @@ class PeminjamanController extends Controller
 
         return back()->with('status', 'Pengembalian berhasil dicatat.');
     }
+
+    // A4: IDOR (tanpa pemeriksaan pemilik)
+    public function show($id)
+    {
+        $peminjaman = Peminjaman::with(['anggota', 'buku'])->findOrFail($id);
+
+        return view('peminjaman.show', compact('peminjaman'));
+    }
 }

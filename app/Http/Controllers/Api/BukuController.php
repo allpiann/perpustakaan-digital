@@ -143,8 +143,4 @@ class BukuController extends Controller
 
         return response()->json(['message' => 'Buku berhasil dihapus'], 200);
     }
-        public function kelola()
-    {
-        return view('buku.index');
-    }
 }
