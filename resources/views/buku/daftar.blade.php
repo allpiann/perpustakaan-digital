@@ -3,11 +3,17 @@
     <div class="py-12"><div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         @if (session('status'))<div class="mb-4 p-3 bg-green-100 text-green-800 rounded">{{ session('status') }}</div>@endif
         @if ($errors->any())<div class="mb-4 p-3 bg-red-100 text-red-800 rounded">{{ $errors->first() }}</div>@endif
+
+        @can('kelola-buku')
+            <a href="{{ route('buku.create') }}" class="inline-block mb-4 px-4 py-2 bg-indigo-600 text-white rounded">Tambah Buku</a>
+        @endcan
+
         <div class="bg-white shadow-sm sm:rounded-lg p-6 overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead><tr class="text-left border-b">
                     <th class="p-2">No</th><th class="p-2">ID</th><th class="p-2">Kategori</th><th class="p-2">Judul</th>
-                    <th class="p-2">Penulis</th><th class="p-2">Tahun</th><th class="p-2">Aksi</th>
+                    <th class="p-2">Penulis</th><th class="p-2">Tahun</th>
+                    @can('kelola-buku')<th class="p-2">Aksi</th>@endcan
                 </tr></thead>
                 <tbody>
                 @foreach ($bukus as $b)
@@ -15,12 +21,12 @@
                         <td class="p-2">{{ $loop->iteration }}</td>
                         <td class="p-2">{{ $b->id }}</td>
                         <td class="p-2">{{ $b->kategori?->nama }}</td>
-                        {{-- A1 DITAMBAL: {{ }} melakukan escaping --}}
                         <td class="p-2">{{ $b->judul }}</td>
                         <td class="p-2">{{ $b->penulis }}</td>
                         <td class="p-2">{{ $b->tahun_terbit }}</td>
-                        <td class="p-2">
-                            {{-- A3 DITAMBAL: form DELETE dengan token CSRF --}}
+                        @can('kelola-buku')
+                        <td class="p-2 whitespace-nowrap">
+                            <a class="px-2 py-1 bg-yellow-500 text-white rounded" href="{{ route('buku.edit', $b->id) }}">Ubah</a>
                             <form method="POST" action="{{ route('buku.destroy', $b->id) }}" class="inline"
                                   onsubmit="return confirm('Hapus buku ini?')">
                                 @csrf
@@ -28,6 +34,7 @@
                                 <button class="px-2 py-1 bg-red-600 text-white rounded">Hapus</button>
                             </form>
                         </td>
+                        @endcan
                     </tr>
                 @endforeach
                 </tbody>

@@ -18,7 +18,10 @@
                     @can('lihat daftar buku')
                         <x-nav-link :href="route('buku.index')" :active="request()->routeIs('buku.*')">Daftar Buku</x-nav-link>
                     @endcan
-                    @can('kelola data buku')
+                    @can('lihat daftar buku')
+                        <x-nav-link :href="route('buku.daftar')" :active="request()->routeIs('buku.daftar')">Daftar Buku (Server)</x-nav-link>
+                    @endcan
+                    @can('kelola-buku')
                         <x-nav-link :href="route('kelola.buku')" :active="request()->routeIs('kelola.buku')">Kelola Buku</x-nav-link>
                     @endcan
                     @can('kelola peminjaman')

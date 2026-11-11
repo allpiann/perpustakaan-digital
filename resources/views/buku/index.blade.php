@@ -49,7 +49,7 @@
     <div id="alert"></div>
 
     <!-- PERUBAHAN 2: form hanya tampil untuk yang punya permission 'kelola data buku' -->
-    @can('kelola data buku')
+    @can('kelola-buku')
     <div class="card">
         <h3 id="form-title">Tambah Buku</h3>
         <form id="form-buku" novalidate>
@@ -91,7 +91,7 @@
                 <tr>
                     <th>No</th><th>Kategori</th><th>Judul</th><th>Penulis</th><th>Tahun Terbit</th>
                     <!-- PERUBAHAN 3: kolom Aksi hanya untuk yang punya permission -->
-                    @can('kelola data buku')<th>Aksi</th>@endcan
+                    @can('kelola-buku')<th>Aksi</th>@endcan
                 </tr>
             </thead>
             <tbody id="tabel-buku">
@@ -110,7 +110,7 @@
     const API = '/api/buku';
 
     // PERUBAHAN 4: true kalau user punya permission 'kelola data buku', false kalau siswa
-    const BISA_KELOLA = @json(auth()->user()->can('kelola data buku'));
+    const BISA_KELOLA = @json(auth()->user()->can('kelola-buku'));
     const KOLOM = BISA_KELOLA ? 6 : 5;
 
     const HEADERS = { 'Accept': 'application/json', 'Content-Type': 'application/json' };

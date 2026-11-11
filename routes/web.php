@@ -24,23 +24,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->middleware('permission:ubah profil sendiri')->name('profile.destroy');
 
-    // ===== Modul 6, Soal 2 =====
+    // ===== Modul 6: buku =====
     Route::get('/buku-cari', [BukuController::class, 'cari'])->name('buku.cari');
-    // Route GET /buku/{buku}/hapus DIHAPUS, diganti DELETE:
-    Route::delete('/buku/{buku}', [BukuController::class, 'destroy'])
-        ->whereNumber('buku')->name('buku.destroy');
+
+    // Soal 3: tambah, ubah, hapus hanya untuk yang lolos Gate kelola-buku
+    Route::middleware('can:kelola-buku')->group(function () {
+        Route::get('/buku/create', [BukuController::class, 'create'])->name('buku.create');
+        Route::post('/buku', [BukuController::class, 'store'])->name('buku.store');
+        Route::get('/buku/{buku}/edit', [BukuController::class, 'edit'])->whereNumber('buku')->name('buku.edit');
+        Route::put('/buku/{buku}', [BukuController::class, 'update'])->whereNumber('buku')->name('buku.update');
+        Route::delete('/buku/{buku}', [BukuController::class, 'destroy'])->whereNumber('buku')->name('buku.destroy');
+        Route::get('/kelola/buku', [BukuController::class, 'kelola'])->name('kelola.buku');
+    });
+
     // A4 masih rentan (ditutup di Soal 4)
     Route::get('/peminjaman/{id}', [PeminjamanController::class, 'show'])
         ->whereNumber('id')->name('peminjaman.show');
-    // ===========================
 
     Route::middleware('permission:lihat daftar buku')->group(function () {
         Route::get('/buku', [BukuController::class, 'index'])->name('buku.index');
         Route::get('/buku/daftar', [BukuController::class, 'daftar'])->name('buku.daftar');
         Route::get('/buku/{id}', [BukuController::class, 'show'])->whereNumber('id')->name('buku.show');
     });
-    Route::get('/kelola/buku', [BukuController::class, 'kelola'])
-        ->middleware('permission:kelola data buku')->name('kelola.buku');
 
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])
         ->middleware('permission:akses dashboard admin')->name('admin.dashboard');
