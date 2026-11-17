@@ -1,4 +1,5 @@
 <x-guest-layout>
+    <h2 class="text-center text-lg font-bold mb-4">Login Perpustakaan Digital - 250441100003</h2>
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
